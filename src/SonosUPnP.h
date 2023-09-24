@@ -278,6 +278,7 @@ struct TrackInfo
   char *uri;
 };
 
+
 class SonosUPnP
 {
 
@@ -310,6 +311,7 @@ class SonosUPnP
     void addPlaylistToQueue(IPAddress speakerIP, uint16_t playlistIndex);
     void addTrackToQueue(IPAddress speakerIP, const char *scheme, const char *address);
     void removeAllTracksFromQueue(IPAddress speakerIP);
+    bool getLocalUID(IPAddress ip, char *resultBuffer, size_t resultBufferSize);
     
     #ifndef SONOS_WRITE_ONLY_MODE
     

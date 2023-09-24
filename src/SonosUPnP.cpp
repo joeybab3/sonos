@@ -598,6 +598,55 @@ void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, c
   ethClient_stop();
 }
 
+
+bool SonosUPnP::getLocalUID(IPAddress ip, char *resultBuffer, size_t resultBufferSize)
+{
+  if (resultBufferSize > 0)
+    resultBuffer[0] = 0; 
+  if (!ethClient.connect(ip, UPNP_PORT)) 
+  {
+    Serial.println("*SONOS: Unable to connect to the speaker :(");
+    ethClient_stop();
+    return false;
+  }
+  
+
+  char buffer[1400];
+
+  // Write HTTP start
+  ethClient_write("GET /status/zp");
+  ethClient_write(p_HttpVersion);
+
+  // Write HTTP header
+  sprintf_P(buffer, p_HeaderHost, ip[0], ip[1], ip[2], ip[3], UPNP_PORT); // 29 bytes max
+  ethClient_write(buffer);
+  ethClient_write("Accept: text/xml\n");
+  ethClient_write("\n");
+
+
+  uint32_t start = millis();
+  while (!ethClient.available())
+  {
+    if (millis() > (start + UPNP_RESPONSE_TIMEOUT_MS))
+    {
+      if (ethernetErrCallback) ethernetErrCallback();
+      {
+        ethClient_stop();
+        return false;
+      }
+    }
+  }
+
+
+  xPath.reset();
+  PGM_P path[] = { "ZPSupportInfo", "ZPInfo", "LocalUID" };
+ 
+  ethClient_xPath(path, 3, resultBuffer, resultBufferSize);
+  
+  ethClient_stop();
+  return true;
+}
+
 bool SonosUPnP::upnpPost(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue)
 {
   if (!ethClient.connect(ip, UPNP_PORT)) 

@@ -82,6 +82,9 @@
 #define UPNP_DEVICE_PROPERTIES 3
 #define UPNP_DEVICE_PROPERTIES_SERVICE "DeviceProperties:1"
 #define UPNP_DEVICE_PROPERTIES_ENDPOINT "/DeviceProperties/Control"
+#define UPNP_GROUP_RENDERING_CONTROL 4
+#define UPNP_GROUP_RENDERING_CONTROL_SERVICE "GroupRenderingControl:1"
+#define UPNP_GROUP_RENDERING_CONTROL_ENDPOINT "/MediaRenderer/GroupRenderingControl/Control"
 
 // Sonos speaker state control:
 /*
@@ -230,6 +233,18 @@
 #define SONOS_CHANNEL_TAG_START "<Channel>"
 #define SONOS_CHANNEL_TAG_END "</Channel>"
 
+
+// Set relative group volume:
+/*
+<u:SetRelativeGroupVolume>
+  <InstanceID>0</InstanceID>
+  <Adjustment>[-100 - 100]</Adjustment>
+</u:SetRelativeGroupVolume>
+*/
+#define SONOS_TAG_SNAPSHOT_GROUP_VOLUME "SnapshotGroupVolume"
+#define SONOS_TAG_SET_RELATIVE_GROUP_VOLUME "SetRelativeGroupVolume"
+#define SONOS_TAG_SET_ADJUSTMENT "Adjustment"
+
 // Play Mode:
 /*
 <u:GetTransportSettingsResponse>
@@ -286,6 +301,7 @@ class SonosUPnP
 
     SonosUPnP(WiFiClient client, void (*ethernetErrCallback)(void));
 
+    void setAVTransportURI(IPAddress speakerIP, const char *scheme, const char *address, PGM_P metaStart_P, PGM_P metaEnd_P, const char *metaValue);
     void setAVTransportURI(IPAddress speakerIP, const char *scheme, const char *address);
     void seekTrack(IPAddress speakerIP, uint16_t index);
     void seekTime(IPAddress speakerIP, uint8_t hour, uint8_t minute, uint8_t second);
@@ -307,6 +323,8 @@ class SonosUPnP
     void setBass(IPAddress speakerIP, int8_t bass);
     void setTreble(IPAddress speakerIP, int8_t treble);
     void setLoudness(IPAddress speakerIP, bool state);
+    void snapshopGroupVolume(IPAddress speakerIP);
+    void setRelativeGroupVolume(IPAddress speakerIP, int8_t relativeVolume);
     void setStatusLight(IPAddress speakerIP, bool state);
     void addPlaylistToQueue(IPAddress speakerIP, uint16_t playlistIndex);
     void addTrackToQueue(IPAddress speakerIP, const char *scheme, const char *address);
@@ -350,7 +368,6 @@ class SonosUPnP
 
     void (*ethernetErrCallback)(void);
     void seek(IPAddress speakerIP, const char *mode, const char *data);
-    void setAVTransportURI(IPAddress speakerIP, const char *scheme, const char *address, PGM_P metaStart_P, PGM_P metaEnd_P, const char *metaValue);
     void upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P);
     void upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *value);
     void upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue);

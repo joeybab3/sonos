@@ -40,6 +40,8 @@ const char p_UpnpRenderingControlService[] PROGMEM = UPNP_RENDERING_CONTROL_SERV
 const char p_UpnpRenderingControlEndpoint[] PROGMEM = UPNP_RENDERING_CONTROL_ENDPOINT;
 const char p_UpnpDevicePropertiesService[] PROGMEM = UPNP_DEVICE_PROPERTIES_SERVICE;
 const char p_UpnpDevicePropertiesEndpoint[] PROGMEM = UPNP_DEVICE_PROPERTIES_ENDPOINT;
+const char p_UpnpGroupRenderingControlService[] PROGMEM = UPNP_GROUP_RENDERING_CONTROL_SERVICE;
+const char p_UpnpGroupRenderingControlEndpoint[] PROGMEM = UPNP_GROUP_RENDERING_CONTROL_ENDPOINT;
 
 const char p_Play[] PROGMEM = SONOS_TAG_PLAY;
 const char p_SourceRinconTemplate[] PROGMEM = SONOS_SOURCE_RINCON_TEMPLATE;
@@ -99,6 +101,10 @@ const char p_SetTreble[] PROGMEM = SONOS_TAG_SET_TREBLE;
 const char p_SetLoudness[] PROGMEM = SONOS_TAG_SET_LOUDNESS;
 const char p_ChannelTagStart[] PROGMEM = SONOS_CHANNEL_TAG_START;
 const char p_ChannelTagEnd[] PROGMEM = SONOS_CHANNEL_TAG_END;
+
+const char p_SnapshotGroupVolume[] PROGMEM = SONOS_TAG_SNAPSHOT_GROUP_VOLUME;
+const char p_SetRelativeGroupVolume[] PROGMEM = SONOS_TAG_SET_RELATIVE_GROUP_VOLUME;
+
 
 const char p_GetTransportSettingsA[] PROGMEM = SONOS_TAG_GET_TRANSPORT_SETTINGS;
 const char p_GetTransportSettingsR[] PROGMEM = SONOS_TAG_GET_TRANSPORT_SETTINGS_RESPONSE;
@@ -274,6 +280,21 @@ void SonosUPnP::setLoudness(IPAddress speakerIP, bool state)
   upnpSet(
     speakerIP, UPNP_RENDERING_CONTROL, p_SetLoudness,
     SONOS_TAG_DESIRED_LOUDNESS, state ? "1" : "0", "", p_ChannelTagStart, p_ChannelTagEnd, SONOS_CHANNEL_MASTER);
+}
+
+void SonosUPnP::snapshopGroupVolume(IPAddress speakerIP)
+{
+  upnpSet(
+    speakerIP, UPNP_GROUP_RENDERING_CONTROL, p_SnapshotGroupVolume);
+}
+
+void SonosUPnP::setRelativeGroupVolume(IPAddress speakerIP, int8_t relativeVolume)
+{
+  relativeVolume = constrain(relativeVolume, -100, 100);
+  char relativeVolumeChar[5];
+  itoa(relativeVolume, relativeVolumeChar, 10);
+  upnpSet(
+     speakerIP, UPNP_GROUP_RENDERING_CONTROL, p_SetRelativeGroupVolume, SONOS_TAG_SET_ADJUSTMENT, relativeVolumeChar);
 }
 
 void SonosUPnP::setStatusLight(IPAddress speakerIP, bool state)
@@ -595,6 +616,19 @@ void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, c
 void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue)
 {
   upnpPost(ip, upnpMessageType, action_P, field, valueA, valueB, extraStart_P, extraEnd_P, extraValue);
+  
+  // log result
+  // Serial.println("Result:");
+  // while (true)
+  // {
+  //   auto read = ethClient.read();
+  //   if (read == -1)
+  //     return;
+  //   Serial.print((char) read);
+  // }
+  // Serial.println();
+
+  // stop receive
   ethClient_stop();
 }
 
@@ -733,9 +767,9 @@ bool SonosUPnP::upnpPost(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, 
   }
   if (extraStart_P)
   {
-    ethClient_write_P(extraStart_P, buffer, sizeof(buffer)); // 390 bytes
+    ethClient_write(extraStart_P); // 390 bytes
     ethClient_write(extraValue);
-    ethClient_write_P(extraEnd_P, buffer, sizeof(buffer)); // 271 bytes
+    ethClient_write(extraEnd_P); // 271 bytes
   }
   ethClient_write(SOAP_ACTION_END_TAG_START);
   ethClient_write_P(action_P, buffer, sizeof(buffer)); // 35 bytes
@@ -762,6 +796,7 @@ PGM_P SonosUPnP::getUpnpService(uint8_t upnpMessageType)
     case UPNP_AV_TRANSPORT: return p_UpnpAvTransportService;
     case UPNP_RENDERING_CONTROL: return p_UpnpRenderingControlService;
     case UPNP_DEVICE_PROPERTIES: return p_UpnpDevicePropertiesService;
+    case UPNP_GROUP_RENDERING_CONTROL: return p_UpnpGroupRenderingControlService;
   }
 }
 
@@ -772,6 +807,7 @@ PGM_P SonosUPnP::getUpnpEndpoint(uint8_t upnpMessageType)
     case UPNP_AV_TRANSPORT: return p_UpnpAvTransportEndpoint;
     case UPNP_RENDERING_CONTROL: return p_UpnpRenderingControlEndpoint;
     case UPNP_DEVICE_PROPERTIES: return p_UpnpDevicePropertiesEndpoint;
+    case UPNP_GROUP_RENDERING_CONTROL: return p_UpnpGroupRenderingControlEndpoint;
   }
 }
 
@@ -786,6 +822,8 @@ void SonosUPnP::ethClient_write(const char *data)
 //ToDo ESP8266 brings its own write_P, we better use this one
 void SonosUPnP::ethClient_write_P(PGM_P data_P, char *buffer, size_t bufferSize)
 {
+  Serial.print("*SONOS: ");
+  Serial.println(data_P);
   uint16_t dataLen = strlen_P(data_P);
   uint16_t dataPos = 0;
   while (dataLen > dataPos)

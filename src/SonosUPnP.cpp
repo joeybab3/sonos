@@ -616,19 +616,6 @@ void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, c
 void SonosUPnP::upnpSet(IPAddress ip, uint8_t upnpMessageType, PGM_P action_P, const char *field, const char *valueA, const char *valueB, PGM_P extraStart_P, PGM_P extraEnd_P, const char *extraValue)
 {
   upnpPost(ip, upnpMessageType, action_P, field, valueA, valueB, extraStart_P, extraEnd_P, extraValue);
-  
-  // log result
-  // Serial.println("Result:");
-  // while (true)
-  // {
-  //   auto read = ethClient.read();
-  //   if (read == -1)
-  //     return;
-  //   Serial.print((char) read);
-  // }
-  // Serial.println();
-
-  // stop receive
   ethClient_stop();
 }
 

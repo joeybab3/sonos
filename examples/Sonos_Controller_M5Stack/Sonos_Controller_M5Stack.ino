@@ -40,6 +40,46 @@ void handleResponse();
 void handleGet();
 void handleGt();
 
+static const char HTML_HEADER[] PROGMEM = R"(
+<html>
+<head>
+<title>ESP32 Sonos Controller</title>
+<style>
+.slider{width:250px}
+.response{font-family:"Courier New",Courier,"Lucida Sans Typewriter","Lucida Typewriter",monospace;border-radius:10px;background-color:#FFF;height:25%;overflow-y:scroll;padding:10px}
+.controls{font-size:36px;color:#000;text-decoration:none;padding:0 10px}
+#container{width:98%;height:98%;border-radius:10px;background-color:#999;padding:10px;margin:auto}
+#linkholder{margin:auto}
+#console_text{width:250px}
+</style>
+<script>
+var v=0,l="";async function sendCmd(c){try{const r=await fetch(`/cmd?cmd=${c}`);if(r.ok){const t=await r.text();addR(t+"<br/>")}}catch(e){addR(`Error: ${e}<br/>`)}}function parseCmd(c){document.getElementById('console_text').value='';sendCmd(c)}async function setV(v){v=parseInt(v);if(Number.isInteger(v)){if(v>99||v<0){addR("Your number must be between 0 and 99<br/>");document.getElementById("volume").value=v}else{await sendCmd(v);v=v;await getV()}}else{addR("You must enter a number<br/>");document.getElementById("volume").value=v}}function addR(r){document.getElementById("response").innerHTML+=r;var e=document.getElementById('response');e.scrollTop=e.scrollHeight}async function getV(){try{const r=await fetch("/get?cmd=gv");if(r.ok){const t=await r.text();addR("v = "+t+"<br/>");v=t;document.getElementById("volume").value=v;document.getElementById("vol").textContent=v;document.getElementById("volume-slider").value=v}}catch(e){addR(`Error: ${e}<br/>`)}}async function getT(){const s=await sendR("gs");addR("SongType = "+s+"<br/>")}async function sendR(c){try{const r=await fetch(`/get?cmd=${c}`);if(r.ok){l=await r.text();return l}}catch(e){addR(`Error: ${e}<br/>`)}return l}async function updateS(){await getT();await getV()}
+</script>
+</head>
+<body>
+<div id="container">
+<h1>Sonos - M5Stack Web Controller!</h1>
+)";
+
+static const char HTML_CONTROLS[] PROGMEM = R"(
+<p id="linkholder"><a href="#" onclick="sendCmd('pr');" class="controls">&#9198;</a> 
+<a href="#" onclick="sendCmd('pl');" class="controls">&#9654;</a> 
+<a href="#" onclick="sendCmd('pa');" class="controls">&#9208;</a> 
+<a href="#" onclick="sendCmd('nx');" class="controls">&#9197;</a></p>
+)";
+
+static const char HTML_FOOTER[] PROGMEM = R"(
+<p>Server Response:<div id="response" class="response"></div></p>
+<p><form action="/" method="get" id="console"><input placeholder="Enter a command..." type="text" id='console_text'/></form></p>
+<script>var intervalID = window.setInterval(getVolume, 50000);
+document.getElementById('console').addEventListener('submit', function(e) { e.preventDefault(); parseCmd(document.getElementById('console_text').value); });
+</script>
+</div>
+<div id="tips"></div>
+</body>
+</html>
+)";
+
 void setup()
 {
   Serial.begin(115200);
@@ -318,31 +358,17 @@ void handleInput(String cmd, byte b1, byte b2)
 /* WebServer Stuff */
 
 void handleRoot() {
-  int vol = g_sonos.getVolume(g_KitchenIP);
-  String msg = "<html>\n";
-  msg += "<head>\n";
-  msg += "<title>ESP8266 Sonos Controller</title>\n";
-  msg += "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://joeybabcock.me/iot/hosted/hosted-sonos.css\">";
-  msg += "<script src=\"https://code.jquery.com/jquery-3.1.1.min.js\"></script>\n";
-  msg += "<script src=\"http://joeybabcock.me/iot/hosted/hosted-sonos.js\"></script>\n";
-  msg += "</head>\n";
-  msg += "<body>\n";
-  msg += "<div id=\"container\">\n";
-  msg += "<h1>Sonos - Esp8266 Web Controller!</h1>\n";
-  msg += "<p id=\"linkholder\"><a href=\"#\" onclick=\"sendCmd('pr');\"><img src=\"http://joeybabcock.me/iot/hosted/rw.png\"/></a> \n";
-  msg += "<a href=\"#\" onclick=\"sendCmd('pl');\"><img src=\"http://joeybabcock.me/iot/hosted/play.png\"/></a> \n";
-  msg += "<a href=\"#\" onclick=\"sendCmd('pa');\"><img src=\"http://joeybabcock.me/iot/hosted/pause.png\"/></a> \n";
-  msg += "<a href=\"#\" onclick=\"sendCmd('nx');\"><img src=\"http://joeybabcock.me/iot/hosted/ff.png\"/></a></p>\n";
-  msg += "<h3>Volume: <span id=\"vol\">"+String(vol)+"</span><input type=\"hidden\" id='volume' value='"+String(vol)+"' onchange=\"setVolume(this.value)\"/></h3><br/>\n";
-  msg += "<input type=\"range\" class=\"slider\"  min=\"0\" max=\"99\" value=\""+String(vol)+"\" name=\"volume-slider\" id=\"volume-slider\" onchange=\"setVolume(this.value)\" />\n";
-  msg += "<p>Server Response:<div id=\"response\" class=\"response\"></div></p>\n";
-  msg += "<p><form action=\"/\" method=\"get\" id=\"console\"><input placeholder=\"Enter a command...\" type=\"text\" id='console_text'/></form></p>\n";
-  msg += "<script>var intervalID = window.setInterval(getVolume, 50000);\n$('#console').submit(function(){parseCmd($(\"#console_text\").val());\nreturn false;\n});\n</script>\n";
-  msg += "</div>\n";
-  msg += "<div id=\"tips\"></div>\n";
-  msg == "</body>\n";
-  msg += "</html>\n";
-  server.send(200, "text/html", msg);
+    int vol = g_sonos.getVolume(g_KitchenIP);
+    Serial.println("VOLUME:");
+    Serial.println(g_sonos.getVolume(g_KitchenIP));
+    
+    String msg = String(FPSTR(HTML_HEADER));
+    msg += String(FPSTR(HTML_CONTROLS));
+    msg += "<h3>Volume: <span id=\"vol\">"+String(vol)+"</span><input type=\"hidden\" id='volume' value='"+String(vol)+"' onchange=\"setV(this.value)\"/></h3><br/>\n";
+    msg += "<input type=\"range\" class=\"slider\"  min=\"0\" max=\"99\" value=\""+String(vol)+"\" name=\"volume-slider\" id=\"volume-slider\" onchange=\"setV(this.value)\" />\n";
+    msg += String(FPSTR(HTML_FOOTER));
+    
+    server.send(200, "text/html", msg);
 }
 
 void handleCmd(){

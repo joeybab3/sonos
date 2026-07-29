@@ -542,8 +542,6 @@ uint8_t SonosUPnP::getVolume(IPAddress speakerIP, const char *channel)
   upnpGetString(
     speakerIP, UPNP_RENDERING_CONTROL, p_GetVolumeA,
     SONOS_TAG_CHANNEL, channel, path, 4, result, sizeof(result));
-	Serial.print("Result:");
-	Serial.println(result);
   return constrain(atoi(result), 0, 100);
 }
 

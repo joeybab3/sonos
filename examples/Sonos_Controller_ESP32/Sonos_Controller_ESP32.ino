@@ -71,7 +71,7 @@ static const char HTML_CONTROLS[] PROGMEM = R"(
 static const char HTML_FOOTER[] PROGMEM = R"(
 <p>Server Response:<div id="response" class="response"></div></p>
 <p><form action="/" method="get" id="console"><input placeholder="Enter a command..." type="text" id='console_text'/></form></p>
-<script>var intervalID = window.setInterval(getVolume, 50000);
+<script>var intervalID = window.setInterval(getV, 50000);
 document.getElementById('console').addEventListener('submit', function(e) { e.preventDefault(); parseCmd(document.getElementById('console_text').value); });
 </script>
 </div>
@@ -249,9 +249,6 @@ void handleInput(String cmd, byte b1, byte b2) {
         Serial.println(uri);
     }
 }
-
-/* WebServer Stuff */
-/* Images are hosted externally */
 
 void handleRoot() {
     int vol = g_sonos.getVolume(g_KitchenIP);
